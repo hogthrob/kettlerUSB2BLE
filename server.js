@@ -47,6 +47,33 @@ io.on('connection', (socket) => {
 		case 'GearDn':
 			bikeState.GearDown();
 			break;
+		case 'SprocketUp':
+			bikeState.SprocketUp();
+			break;
+		case 'SprocketDown':
+			bikeState.SprocketDown();
+			break;
+		case 'ChangeRing':
+			bikeState.ChangeRing();
+			break;
+		case 'GearPowerUp':
+			bikeState.GearPowerUp();
+			break;
+		case 'GearPowerUpBig':
+			bikeState.GearPowerUp(30);
+			break;
+		case 'GearPowerDown':
+			bikeState.GearPowerDown();
+			break;
+		case 'GearPowerDownBig':
+			bikeState.GearPowerDown(30);
+			break;
+		case 'ChangeGearMode':
+			bikeState.ChangeGearMode();
+			break;
+		case 'ChangeKill':
+			bikeState.ChangeKill();
+			break;
 		case 'pause':
 			bikeState.setTargetPower(140);
 			break;
@@ -78,14 +105,36 @@ bikeState.on('gear', (gear) => {
 	// oled.displayGear(gear);
 });
 bikeState.on('grade', (grade) => {
-	io.emit('grade', grade + '%');
+	io.emit('grade', grade);
 	// oled.displayGrade(grade);
 });
 bikeState.on('windspeed', (windspeed) => {
 	io.emit('windspeed', windspeed);
 });
 bikeState.on('simpower', (simpower) => {
+	io.emit('power', simpower);
 	kettlerUSB.setPower(simpower);
+});
+bikeState.on('speed', (speed) => {
+	io.emit('speed', speed);
+});
+// bikeState.on('rpm', (rpm) => {
+// 	io.emit('rpm', rpm);
+// });
+bikeState.on('crr', (crr) => {
+	io.emit('crr', crr);
+});
+bikeState.on('cw', (cw) => {
+	io.emit('cw', cw);
+});
+bikeState.on('autoGears', (autoGears) => {
+	io.emit('autoGears', autoGears);
+});
+bikeState.on('kill', (kill) => {
+	io.emit('kill', kill);
+});
+bikeState.on('gearPower', (gearPower) => {
+	io.emit('gearPower', gearPower);
 });
 // first state
 bikeState.setGear(4);
@@ -107,14 +156,24 @@ kettlerUSB.on('data', (data) => {
 	bikeState.setData(data);
 
 	// send to html server
-	if ('speed' in data)
-		io.emit('speed', data.speed.toFixed(1));
-	if ('power' in data)
-		io.emit('power', data.power);
-	if ('hr' in data)
-		io.emit('hr', data.hr);
+	//if ('speed' in data)
+	//	io.emit('speed', data.speed.toFixed(1));
+	// if ('power' in data)
+	// 	io.emit('power', data.power);
+	// if ('hr' in data)
+	// 	io.emit('hr', data.hr);
 	if ('rpm' in data)
 		io.emit('rpm', data.rpm);
+
+	// The minimum power that can be set is 25 Watts.
+	// The bike will transmit that we are riding at 25 watts even when we are not pedalling.
+	// 25 watts should be considered 0.
+	if ('power' in data) {
+		if ((data.power <= 25) || bikeState.kill) {
+			data.power = 0;
+			data.rpm = 0;
+		}
+	}
 
 	// send to BLE adapter
 	kettlerBLE.notifyFTMS(data);

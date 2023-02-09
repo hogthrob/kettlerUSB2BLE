@@ -28,6 +28,11 @@
 			font-weight:900;
 			font-size:100px;
 		}
+
+		.numbers-light {
+			font-weight: 900;
+			font-size: 300px;
+		}
 		
 		button {
 		  height: 100%;
@@ -41,10 +46,41 @@
 			background:olive;
 		}
 		
+		.zone0 {
+			color: #fff;
+			background-color: #817f82;
+		}
+
+		.zone1 {
+			color: #fff;
+			background-color: #408cff;
+		}
+
+		.zone2 {
+			color: #fff;
+			background-color: #61bd5a;
+		}
+
+		.zone3 {
+			color: #fff;
+			background-color: #facb3c;
+		}
+
+		.zone4 {
+			color: #fff;
+			background-color: #f76939;
+		}
+
+		.zone5 {
+			color: #fff;
+			background-color: #f73c08;
+		}
 	 
       </style>
       <script type="text/javascript">
-         var socket = io.connect("192.168.1.36:3000");
+		 var socket = io.connect("192.168.33.2:3000");
+		 var ftp = 300;
+
          socket.on('speed', function (data) {  
 			$('#speed').html(data);
          });
@@ -53,19 +89,75 @@
          });
 		 socket.on('power', function (data) {  
 			$('#power').html(data);
+			$('#power2').html(data);
+
+			$('#tdPower').removeClass('zone0');
+			$('#tdPower').removeClass('zone1');
+			$('#tdPower').removeClass('zone2');
+			$('#tdPower').removeClass('zone3');
+			$('#tdPower').removeClass('zone4');
+			$('#tdPower').removeClass('zone5');
+
+			var per = (parseFloat(data) / ftp) * 100;
+			if (per < 60) {
+				$('#tdPower').addClass('zone0');
+			} else if (per < 76) {
+				$('#tdPower').addClass('zone1');
+			} else if (per < 90) {
+				$('#tdPower').addClass('zone2');
+			} else if (per < 105) {
+				$('#tdPower').addClass('zone3');
+			} else if (per < 119) {
+				$('#tdPower').addClass('zone4');
+			} else {
+				$('#tdPower').addClass('zone5');
+			}
          });
 		 socket.on('gear', function (data) {  
+			$('#keyGear').html(data);
 			$('#gear').html(data);
          });
 		 socket.on('windspeed', function (data) {  
 			$('#windspeed').html(data);
          });
 		 socket.on('grade', function (data) {  
-			$('#grade').html(data);
+			$('#grade').html(data + "%");
+			$('#grade2').html(data + "%");
+
+			$('#tdGrade').removeClass('zone0');
+			$('#tdGrade').removeClass('zone1');
+			$('#tdGrade').removeClass('zone2');
+			$('#tdGrade').removeClass('zone3');
+			$('#tdGrade').removeClass('zone4');
+			$('#tdGrade').removeClass('zone5');
+
+			var per = parseFloat(data);
+			if (per < -3) {
+				$('#tdGrade').addClass('zone2');
+			} else if (per < -1.5) {
+				$('#tdGrade').addClass('zone1');
+			} else if (per < 3) {
+				$('#tdGrade').addClass('zone0');
+			} else if (per < 6) {
+				$('#tdGrade').addClass('zone3');
+			} else if (per < 9) {
+				$('#tdGrade').addClass('zone4');
+			} else {
+				$('#tdGrade').addClass('zone5');
+			}
          });
 		 socket.on('mode', function (data) {  
 			$('#mode').html(data);
-         });
+		 });
+		 socket.on('rpm', function(data) {
+			$('#rpm').html(data);
+		 });
+		 socket.on('crr', function(data) {
+			//$('#crr').html(data);
+		 });
+		 socket.on('cw', function(data) {
+			$('#cw').html(data);
+		 });
 		 socket.on('mode', function (data) {  
 			if (data==='ERG')
 			{
@@ -76,18 +168,118 @@
 			}
 			else
 			{
-				$('#keyLeft').attr("data-value", "GearDn");
+				$('#keyLeft').attr("data-value", "SprocketDown");
 				$('#keyLeft').html( "Gear Dn");
-				$('#keyRight').attr("data-value", "GearUp");
+				$('#keyRight').attr("data-value", "SprocketUp");
 				$('#keyRight').html( "Gear Up");
 			}
-         });
+		 });
+		 socket.on('autoGears', function(autoGears) {
+			if (autoGears) {
+				$('#trGrade').css("display", "none");
+				$('#trTargetPower').css("display", "");
+			} else {
+				$('#trGrade').css("display", "");
+				$('#trTargetPower').css("display", "none");
+			}
+		 });
+		 socket.on('kill', function(kill) {
+			if (kill) {
+				$('#tdGearRatio').addClass("zone0");
+			} else {
+				$('#tdGearRatio').removeClass("zone0");
+			}
+		 });
+		 socket.on('gearPower', function(gearPower) {
+			$('#targetPower').html(gearPower);
+			$('#targetPower2').html(gearPower);
+		 });
 		 $(function () {
 			var socket = io();
 			 $('button').click(function(){
 				socket.emit('key', $(this).attr("data-value"));
 				return false;
 			 });
+
+			// Set display
+			var urlParams = new URLSearchParams(window.location.search);
+			if (urlParams.has('light')) {
+				$('#full').css("display", "none");
+				$('#light').css("display", "");
+			}
+
+			var btnX = 2;
+			var btnA = 0;
+			var btnB = 1;
+			var btnY = 3;
+			var btnList = 9;
+			var btnUp = 12;
+			var btnDown = 13;
+			var btnLeft = 14;
+			var btnRight = 15;
+
+			var xPressed = false;
+			var aPressed = false;
+			var bPressed = false;
+			var yPressed = false;
+			var listPressed = false;
+			var upPressed = false;
+			var downPressed = false;
+			var leftPressed = false;
+			var rightPressed = false;
+
+			var gamepadIndex;
+			window.addEventListener("gamepadconnected", function(e) {
+				gamepadIndex = e.gamepad.index;
+				var gp = navigator.getGamepads()[gamepadIndex];
+				//alert(gp.id + " connected. " + gp.buttons.length + " buttons.");
+
+				setInterval(function() {
+					// Always need to get the gamepad object
+					var gp = navigator.getGamepads()[gamepadIndex];
+
+					// for (i = 0; i < gp.buttons.length; i++) {
+					// 	console.log(i + ": " + gp.buttons[i].pressed);
+					// }
+
+					if (!xPressed && gp.buttons[btnX].pressed) {
+						socket.emit('key', 'ChangeRing');
+					}
+					if (!aPressed && gp.buttons[btnA].pressed) {
+						socket.emit('key', 'SprocketUp');
+					}
+					if (!bPressed && gp.buttons[btnB].pressed) {
+						socket.emit('key', 'SprocketDown');
+					}
+					if (!yPressed && gp.buttons[btnY].pressed) {
+						socket.emit('key', 'ChangeKill');
+					}
+					if (!listPressed && gp.buttons[btnList].pressed) {
+						socket.emit('key', 'ChangeGearMode');
+					}
+					if (!upPressed && gp.buttons[btnUp].pressed) {
+						socket.emit('key', 'GearPowerUpBig');
+					}
+					if (!downPressed && gp.buttons[btnDown].pressed) {
+						socket.emit('key', 'GearPowerDownBig');
+					}
+					if (!leftPressed && gp.buttons[btnLeft].pressed) {
+						socket.emit('key', 'GearPowerDown');
+					}
+					if (!rightPressed && gp.buttons[btnRight].pressed) {
+						socket.emit('key', 'GearPowerUp');
+					}
+					xPressed = gp.buttons[btnX].pressed;
+					aPressed = gp.buttons[btnA].pressed;
+					bPressed = gp.buttons[btnB].pressed;
+					yPressed = gp.buttons[btnY].pressed;
+					listPressed = gp.buttons[btnList].pressed;
+					upPressed = gp.buttons[btnUp].pressed;
+					downPressed = gp.buttons[btnDown].pressed;
+					leftPressed = gp.buttons[btnLeft].pressed;
+					rightPressed = gp.buttons[btnRight].pressed;
+				}, 50);
+			});
 		 });
       </script>
    </head>
@@ -95,45 +287,88 @@
   
 <div id="dialog" title="Basic dialog">
 </div>
+	<table id="light" style="display: none;">
+		<tr>
+			<td id="tdPower" class="zone0">
+				<div class="BoldH">Power</div>
+				<div class="numbers-light" id="power2">0</div>
+			</td>
+		</tr>
+		<tr>
+			<td id="tdGearRatio">
+				<div class="BoldH">Gear</div>
+				<div class="numbers-light" id="gear"></div>
+			</td>
+		</tr>
+		<tr id="trGrade">
+			<td id="tdGrade" class="zone0">
+				<div class="BoldH">Grade</div>
+				<div class="numbers-light" id="grade2">0%</div>
+			</td>
+		</tr>
+		<tr id="trTargetPower" style="display: none;">
+			<td id="tdTargetPower">
+				<div class="BoldH">Target Power</div>
+				<div class="numbers-light" id="targetPower">0</div>
+			</td>
+		</tr>
+	</table>
 
-	 <table id="phone">
+	 <table id="full">
  
+		<tr>
+			<td>
+				<div class="BoldH">RPM</div>
+				<div class="numbers" id="rpm">0</div>
+			</td>
+			<td>
+				<div class="BoldH">Target Power</div>
+				<div class="numbers" id="targetPower2">0</div>
+			</td>
+			<td>
+				<div class="BoldH">CW</div>
+				<div class="numbers" id="cw">0</div>
+			</td>
+		</tr>
 		  <tr>
 			<td> 
 				<div class="BoldH">Speed</div>
-				<div class="numbers" id="speed">0</div>  
+				<div class="numbers" id="speed">0</div>
 			</td>
 			<td>
 			  <div class="BoldH">Power</div>
 				<div class="numbers" id="power">0</div>   
 			</td>
 			<td>
-				<div class="BoldH" >Vent</div>
+				<div class="BoldH" >Wind Speed</div>
 				<div class="numbers" id="windspeed">0</div>  
 			</td>
 		  </tr>
 		  <tr>
 			<td>
-			  <button data-value="PowerDn" id="keyLeft">OFF</button>
+			  <button data-value="GearPowerDown" id="keyLeft">Power Down</button>
 			</td>
 			<td> 
 				<div class="BoldH" id="mode">RAS</div>   
 			</td>
 			</td>
 			<td>
-			  <button data-value="PowerUp" id="keyRight">OFF</button>
+			  <button data-value="GearPowerUp" id="keyRight">Power Up</button>
 			</td>
 		  </tr>
 		  <tr>
-			<td> 
+			<!--<td> 
 				<div class="BoldH">Gear</div>
 				<div class="numbers" id="gear">1</div>   
+			</td>-->
+			<td>
+				<button data-value="ChangeRing" id="keyGear"></button>
 			</td>
 			<td>
 			  <button data-value="pause" class="key">Pause</button>
 			</td>
 			<td>
-				<div class="BoldH">Pente</div>
+				<div class="BoldH">Grade</div>
 				<div class="numbers" id="grade">0%</div>   
 			</td>
 		  </tr>

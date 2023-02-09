@@ -1,7 +1,7 @@
 var $q = require('q');
 var EventEmitter = require('events').EventEmitter;
 var SerialPort = require('serialport');
-var DEBUG = true;
+var DEBUG = false;
 var MOCKDEBUG = false;
 
 const Readline = SerialPort.parsers.Readline;
@@ -149,7 +149,8 @@ class kettlerUSB extends EventEmitter {
 			this.emit('start');
 
 			// start polling in 3s for the state
-			setTimeout(() => this.askState(), 3000);
+			//setTimeout(() => this.askState(), 3000);
+			setTimeout(() => this.askState(), 500);
 		});
 
 		this.port.on('close', () => {
@@ -185,7 +186,8 @@ class kettlerUSB extends EventEmitter {
 			this.directWrite("ST");
 		}
 		// call back later
-		setTimeout(() => this.askState(), 2000);
+		//setTimeout(() => this.askState(), 2000);
+		setTimeout(() => this.askState(), 500);
 	}
 
 	// restart a connection
