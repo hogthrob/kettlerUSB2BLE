@@ -1,8 +1,8 @@
 [Service]
-ExecStart=sudo /usr/local/bin/node server.js
+ExecStart=sudo /usr/bin/node server.js
 Restart=always
-StandardOutput=syslog
-StandardError=syslog
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=Kettler
 User=pi
 Group=pi
