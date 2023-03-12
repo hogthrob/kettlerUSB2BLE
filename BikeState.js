@@ -58,7 +58,9 @@ class BikeState extends EventEmitter {
 	setData(data) {
 		this.data = data;
 		// update
-		this.compute();
+		if (this.mode === 'SIM') {
+			this.compute();
+		}
 	};
 
 	setGear(gear) {
