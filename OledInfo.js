@@ -101,11 +101,11 @@ class Oled {
 		this.oled.setCursor(80, 5);
 		this.oled.writeString(font, 1, 'Gear', 1, false);
 		this.oled.setCursor(90, 25);
-		this.oled.writeString(font, 2, this.gear.toString(), 1, false);
+		this.oled.writeString(font, 1, this.gear.toString(), 1, false);
 		this.oled.setCursor(20, 5);
 		this.oled.writeString(font, 1, 'pente', 1, false);
 		this.oled.setCursor(10, 25);
-		this.oled.writeString(font, 2, this.grade.toString() + '%', 1, true);
+		this.oled.writeString(font, 1, this.grade.toString() + '%', 1, true);
 	}
 
 	setStatus(status) {
