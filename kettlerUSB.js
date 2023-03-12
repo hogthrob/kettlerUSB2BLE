@@ -1,8 +1,8 @@
 var $q = require('q');
 var EventEmitter = require('events').EventEmitter;
 var SerialPort = require('serialport');
-var DEBUG = false;
-var MOCKDEBUG = false;
+const DEBUG = false;
+const MOCKDEBUG = false;
 
 const Readline = SerialPort.parsers.Readline;
 const EOL = '\r\n'; // CRLF
@@ -17,20 +17,48 @@ if (MOCKDEBUG) {
 	});
 }
 
+const CmdRsp = {
+  Status: 'Status', // 8 tab separated values, see below
+  Ack: 'ACK',
+  Error: 'ERROR', // string shown here
+  Str: 'String', // any single string without spaces, but not ACK or ERROR
+  Num: 'Number', // single number
+  Unrecognized: 'Unrecognized',
+  Unknown: 'Unknown', // not known how a valide response looks like, but it must be a single line
+};
+
+const Cmd = {
+  Calibration: { name: 'CA', response: CmdRsp.Num, parameter: false }, // not on older firmwares
+  CommandMode: { name: 'CM', response: CmdRsp.Ack, parameter: false },
+  HardwareId: { name: 'ID', response: CmdRsp.Str, parameter: false },
+  DeviceKind: { name: 'KI', response: CmdRsp.Str, parameter: false }, // not on older firmwares
+  SetPower: { name: 'PW', response: CmdRsp.Status, parameter: true },
+  SetTime: { name: 'PT', response: CmdRsp.Status, parameter: true },
+  SetDistance: { name: 'PD', response: CmdRsp.Status, parameter: true },
+  Reset: { name: 'RS', response: CmdRsp.Ack, parameter: false },
+  Status: { name: 'ST', response: CmdRsp.Status, parameter: false },
+  UnknownSetPerson: { name: 'SP', response: CmdRsp.Unknown, parameter: true }, // it is not clear if SP means set person, not on older firmwares
+  Version: { name: 'VE', response: CmdRsp.Num, parameter: false },
+};
+
 class kettlerUSB extends EventEmitter {
 	constructor() {
 		console.log('[KettlerUSB] constructor');
 		super();
-		this.msg = ["VE", "ID", "VE", "KI", "CA", "RS", "CM", "SP1"];
+		this.msg = [Cmd.Version, Cmd.HardwareId, Cmd.Version, Cmd.CommandMode];
 		//start at -1
 		this.writePower = false;
 		this.power = -1;
+		this.lastCommand = null;
+		this.lastResponse = null;
 	};
 
-	directWrite(data) {
+	directWrite(data, parameter = '') {
+		const command = data.name + parameter;
 		if (DEBUG)
-			console.log('[KettlerUSB] write : ' + data);
-		this.port.write(data + EOL);
+			console.log('[KettlerUSB] write : ' + command);
+		this.port.write(command + EOL,(e) => { if (!e) { 
+		this.lastCommand = data; }})
 	};
 
 	async readAndDispatch(data) {
@@ -54,6 +82,8 @@ class kettlerUSB extends EventEmitter {
 
 		var states = data.split('\t');
 
+		let classification = CmdRsp.Unknown;
+
 		// Analyse le retour de ST
 		//      101     047     074    002     025      0312    01:12   025
 		//info: 1       2       3       4       5       6       7       8
@@ -72,6 +102,7 @@ class kettlerUSB extends EventEmitter {
 		//   in PC mode: can be set with "pt mmss", counting up
 		//8: current power on eddy current brake
 		if (states.length == 8) {
+			classification = CmdRsp.Status;
 			var dataOut = {};
 			// puissance
 			var power = parseInt(states[7]);
@@ -105,6 +136,7 @@ class kettlerUSB extends EventEmitter {
 
 			if (Object.keys(data).length > 0)
 				this.emit('data', dataOut);
+
 		}
 		//                command: es 1
 		// Le dernier chiffre semble etre une touche
@@ -115,10 +147,21 @@ class kettlerUSB extends EventEmitter {
 			if (!isNaN(key)) {
 				this.emit('key', key);
 			}
+		}
+		else if (states.length == 1) {
+			switch(states[0]) {
+				case 'ACK': classification = CmdRsp.Ack; break;
+				case 'ERROR': classification = CmdRsp.Error; break;
+				default: classification = CmdRsp.Str; break;
+			}
 		} else {
 			if (DEBUG)
 				console.log('[KettlerUSB] Unrecognized packet');
 		}
+
+		this.lastResponse = classification;
+		if (DEBUG)
+			console.log('[KettlerUSB] Response classification: ', classification);
 	};
 
 	// Open COM port
@@ -138,19 +181,19 @@ class kettlerUSB extends EventEmitter {
 		// try open
 		this.internalOpen();
 
-		this.port.on('open', () => {
+		this.port.on('open', async () => {
 			// read state
 			// inform it's ok
 			this.emit('open');
 
 			// Je sais pas trop ce que ça fait mais ça initialise la bete
-			this.init();
 			this.port.drain();
+			await this.init();
 			this.emit('start');
 
 			// start polling in 3s for the state
 			//setTimeout(() => this.askState(), 3000);
-			setTimeout(() => this.askState(), 500);
+			setTimeout(() => this.askState(), 2000);
 		});
 
 		this.port.on('close', () => {
@@ -168,26 +211,49 @@ class kettlerUSB extends EventEmitter {
 	};
 
 	// let's initialize com with the bike
+	//
+	sleep(milliseconds) {
+ 		return new Promise(resolve => setTimeout(resolve, milliseconds));
+	}
 
-	init() {
-		if (this.msg.length == 0)
-			return;
-		var m = this.msg.shift();
-		this.directWrite(m);
-		setTimeout(() => this.init(), 150);
+	async initCheckIdAvailable() {
+		this.lastResponse = null;
+		this.directWrite(Cmd.HardwareId);
+		await this.sleep(500);
+		return this.lastResponse === CmdRsp.Str;
+	}
+
+	async init(foundId = false) {
+		// wait until we get a valid response from the bike
+		while (false === await this.initCheckIdAvailable());
+
+		for(let i = 0; i < this.msg.length; i++) {
+			this.directWrite(this.msg[i]);
+			await this.sleep(300);
+		}
 	};
 
 	// require state from the bike
 	askState() {
+		// if we are not seeing response coming in, something bad has happened here
+		// we try to re-establish the connection
+		if (this.lastResponse === null) {
+			this.emit('disconnected');
+			if (DEBUG) {
+				console.log('[KettlerUSB] no response from bike, disconnecting');
+			}
+			this.restart();
+		} else {
+		this.lastResponse = null;
 		if (this.writePower) {
-			this.directWrite("PW" + this.power.toString());
+			this.directWrite(Cmd.SetPower, this.power.toString());
 			this.writePower = false;
 		} else {
-			this.directWrite("ST");
+			this.directWrite(Cmd.Status);
 		}
 		// call back later
-		//setTimeout(() => this.askState(), 2000);
-		setTimeout(() => this.askState(), 500);
+		setTimeout(() => this.askState(), 1000);
+		}
 	}
 
 	// restart a connection
@@ -203,9 +269,9 @@ class kettlerUSB extends EventEmitter {
 	// Stop the port
 	stop() {
 		// fermeture
-		this.directWrite("VE");
-		this.directWrite("ID");
-		this.directWrite("VE");
+		this.directWrite(Cmd.Version);
+		this.directWrite(Cmd.HardwareId);
+		this.directWrite(Cmd.Version);
 	};
 
 	// set the bike power resistance
