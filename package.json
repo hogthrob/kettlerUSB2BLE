@@ -18,11 +18,12 @@
     "express": "^4.15.3",
     "i2c-bus": "^5.1.0",
     "input-event": "^1.2.6",
+    "node-gyp": "^9.3.1",
     "nodemon": "^1.14.3",
-    "rpi-gpio" : "^2.1.5",
     "oled-font-5x7": "^1.0.3",
     "oled-i2c-bus": "^1.0.11",
     "q": "^1.4.1",
+    "rpi-gpio": "^2.1.5",
     "serialport": "^8.0.7",
     "socket.io": "^2.0.4"
   }
