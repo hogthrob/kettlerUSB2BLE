@@ -37,6 +37,11 @@ class BikeState extends EventEmitter {
 		// this.external.grade = 0;
 	};
 
+	emitGear() {
+		//console.log("Gear = " + rings[this.ring] + ' / ' + sprockets[this.sprocket]);
+		this.emit('gear', rings[this.ring] + '/' + sprockets[this.sprocket]);
+	};
+
 	// Restart the trainer
 	restart() {
 		this.mode = 'ERG'; // ERG ou SIM
@@ -82,7 +87,7 @@ class BikeState extends EventEmitter {
 		if (this.sprocket >= sprockets.length) {
 			this.sprocket = sprockets[sprockets.length - 1];
 		}
-		this.emit('gear', rings[this.ring] + ' / ' + sprockets[this.sprocket]);
+		this.emitGear();
 	}
 
 	SprocketDown() {
@@ -90,7 +95,7 @@ class BikeState extends EventEmitter {
 		if (this.sprocket < 0) {
 			this.sprocket = 0;
 		}
-		this.emit('gear', rings[this.ring] + ' / ' + sprockets[this.sprocket]);
+		this.emitGear();
 	}
 
 	ChangeRing() {
@@ -99,7 +104,7 @@ class BikeState extends EventEmitter {
 		} else {
 			this.ring = 0;
 		}
-		this.emit('gear', rings[this.ring] + ' / ' + sprockets[this.sprocket]);
+		this.emitGear();
 	}
 
 	ChangeGearMode() {
@@ -268,7 +273,7 @@ class BikeState extends EventEmitter {
 		params.rp_wr = 60;
 		params.rp_wb = 7;
 		params.ep_g = this.external.grade;
-		params.ep_crr = 0.005;
+		params.ep_crr = this.external.crr;
 		params.rp_a = 0.509;
 		params.rp_cd = 0.63;
 		params.ep_rho = 1.226;
@@ -324,8 +329,7 @@ class BikeState extends EventEmitter {
 			}
 			this.sprocket = index;
 
-			//console.log("Gear = " + rings[this.ring] + ' / ' + sprockets[this.sprocket]);
-			this.emit('gear', rings[this.ring] + ' / ' + sprockets[this.sprocket]);
+			this.emitGear();
 		}
 
 		// Calculate speed
