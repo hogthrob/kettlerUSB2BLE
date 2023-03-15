@@ -1,4 +1,5 @@
 [Service]
+ExecStartPre=/bin/sleep 30  
 ExecStart=sudo /usr/bin/node server.js
 Restart=always
 StandardOutput=journal
