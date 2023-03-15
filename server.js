@@ -114,6 +114,7 @@ bikeState.on('windspeed', (windspeed) => {
 bikeState.on('simpower', (simpower) => {
 	io.emit('power', simpower);
 	kettlerUSB.setPower(simpower);
+	oled.displayPower(simpower);
 });
 bikeState.on('speed', (speed) => {
 	io.emit('speed', speed);
@@ -137,7 +138,7 @@ bikeState.on('gearPower', (gearPower) => {
 	io.emit('gearPower', gearPower);
 });
 // first state
-bikeState.setGear(4);
+//bikeState.setGear(4);
 
 //--- Serial port
 var kettlerUSB = new kettlerUSB();
@@ -200,26 +201,36 @@ function serverCallback(message, ...args) {
 	var success = false;
 	switch (message) {
 	case 'reset':
+		oled.setStatus(0);
 		console.log('[server.js] - Bike reset');
-		kettlerUSB.restart();
+		//kettlerUSB.restart();
 		bikeState.restart();
 		success = true;
 		break;
 
 	case 'control':
+		oled.setStatus(2);
 		console.log('[server.js] - Bike is under control');
-		oled.setStatus(1);
 		bikeState.setControl();
 		success = true;
 		break;
 
 	case 'power':
+		oled.setStatus(2);
 		// console.log('[server.js] - Bike in ERG Mode');
 		bikeState.setTargetPower(args[0]);
 		success = true;
 		break;
 
+	// TODO: more meaningful handling of start and stop events	
+	case 'start':
+	case 'stop':
+		oled.setStatus(3);
+		success = true;
+		break;	
+
 	case 'simulation': // SIM Mode - calculate power based on physics
+		oled.setStatus(1);
 		//console.log('[server.js] - Bike in SIM Mode');
 		var windspeed = Number(args[0]);
 		var grade = Number(args[1]);

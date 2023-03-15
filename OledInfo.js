@@ -12,10 +12,12 @@
 // another value, for example 0.
 var bus = 1;
 
-var i2c = require('i2c-bus'),
+const i2c = require('i2c-bus'),
 i2cBus = i2c.openSync(bus),
 oled = require('oled-i2c-bus');
-var font = require('oled-font-5x7');
+const FontPack = require('oled-font-pack');
+const font = FontPack.oled_5x7;;
+const fontLarge = FontPack.medium_numbers_12x16;
 
 const SIZE_X = 128,
 SIZE_Y = 64;
@@ -40,8 +42,9 @@ class Oled {
 			this.screenStatus = 0;
 			this.usb = 'waiting';
 			this.ble = 'waiting';
-			this.gear = -1;
+			this.gear = "";
 			this.grade = 0;
+			this.targetPower = 0;
 
 			// run async
 			this.displayLoop();
@@ -81,7 +84,13 @@ class Oled {
 			this.displayStatus();
 			break;
 		case 1:
-			this.displaySimInfo()
+			this.displaySimInfo();
+			break;
+		case 2:
+			this.displayErgInfo();
+			break;
+		case 3:
+			this.displayControlledInfo();
 			break;
 		}
 	}
@@ -93,9 +102,12 @@ class Oled {
 		this.oled.setCursor(10, 20);
 		this.oled.writeString(font, 1, 'USB ' + this.usb, 1, false);
 		this.oled.setCursor(10, 38);
-		this.oled.writeString(font, 1, 'BLE ' + this.ble, 1, true);
+		this.oled.writeString(font, 1, 'BLE ' + this.ble, 1, false);
+		this.oled.setCursor(50, 50);
+		this.oled.writeString(font, 1, 'INIT', true);
 	}
 
+	
 	// Gear
 	displaySimInfo() {
 		this.oled.setCursor(80, 5);
@@ -103,9 +115,43 @@ class Oled {
 		this.oled.setCursor(90, 25);
 		this.oled.writeString(font, 1, this.gear.toString(), 1, false);
 		this.oled.setCursor(20, 5);
-		this.oled.writeString(font, 1, 'pente', 1, false);
+		this.oled.writeString(font, 1, 'Grade', 1, false);
 		this.oled.setCursor(10, 25);
-		this.oled.writeString(font, 1, this.grade.toString() + '%', 1, true);
+		this.oled.writeString(fontLarge, 1, this.grade.toString(), 1, false);
+		this.oled.writeString(font, 1, '%', 1, false);
+		this.oled.setCursor(50, 50);
+		this.oled.writeString(font, 1, 'SIM', true);
+	}
+
+		// Gear
+	displayControlledInfo() {
+		this.oled.setCursor(80, 5);
+		this.oled.writeString(font, 1, 'Gear', 1, false);
+		this.oled.setCursor(90, 25);
+		this.oled.writeString(font, 1, this.gear.toString(), 1, false);
+		this.oled.setCursor(20, 5);
+		this.oled.writeString(font, 1, 'Power', 1, false);
+		this.oled.setCursor(10, 25);
+		this.oled.writeString(fontLarge, 1, this.targetPower.toString(), 1, false);
+		this.oled.writeString(font, 1, 'W', 1, false);
+		this.oled.setCursor(50, 50);
+		this.oled.writeString(font, 1, 'CONTROLLED', true);
+	}
+
+
+	displayErgInfo() {
+		this.oled.setCursor(80, 5);
+		this.oled.writeString(font, 1, 'Gear', 1, false);
+		this.oled.setCursor(90, 25);
+		this.oled.writeString(font, 1, this.gear.toString(), 1, false);
+		this.oled.setCursor(20, 5);
+		this.oled.writeString(font, 1, 'Power', 1, false);
+		this.oled.setCursor(10, 25);
+		this.oled.writeString(fontLarge, 1, this.targetPower.toString(), 1, false);
+		this.oled.writeString(font, 1, 'W', 1, false);
+		// this.oled.writeString(fontLarge, 1, this.targetPower.toString() + 'W', 1, false);
+		this.oled.setCursor(50, 50);
+    	this.oled.writeString(font, 1, "ERG", true);
 	}
 
 	setStatus(status) {
@@ -139,5 +185,14 @@ class Oled {
 			this.grade = grade;
 		}
 	}
+
+		// Gear
+	displayPower(targetPower) {
+		if (targetPower != this.targetPower) {
+			this.shouldUpdate = true;
+			this.targetPower = targetPower;
+		}
+	}
+
 }
 module.exports = Oled
