@@ -78,7 +78,7 @@
 	 
       </style>
       <script type="text/javascript">
-		 var socket = io.connect("192.168.33.2:3000");
+	      var socket = io.connect(window.location.hostname + ":" + window.location.port );
 		 var ftp = 300;
 
          socket.on('speed', function (data) {  
