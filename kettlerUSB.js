@@ -51,6 +51,7 @@ class kettlerUSB extends EventEmitter {
 		this.power = -1;
 		this.lastCommand = null;
 		this.lastResponse = null;
+		this.responseWait = 0;
 	};
 
 	directWrite(data, parameter = '') {
@@ -186,6 +187,11 @@ class kettlerUSB extends EventEmitter {
 			// inform it's ok
 			this.emit('open');
 
+			const options = { dtr: true, rts: true};
+
+
+			this.port.set(options, (e) => { if (!e) { this.port.get((e,s) => { if (s) console.log("modem",s.cts,s.dcd,s.dsr,s.rng)  })}})
+
 			// Je sais pas trop ce que ça fait mais ça initialise la bete
 			this.port.drain();
 			await this.init();
@@ -237,14 +243,19 @@ class kettlerUSB extends EventEmitter {
 	askState() {
 		// if we are not seeing response coming in, something bad has happened here
 		// we try to re-establish the connection
+		
 		if (this.lastResponse === null) {
+		}
+		if (this.responseWait >10) {
 			this.emit('disconnected');
 			if (DEBUG) {
 				console.log('[KettlerUSB] no response from bike, disconnecting');
 			}
 			this.restart();
+			this.responseWait = 0;
 		} else {
 		this.lastResponse = null;
+		this.responseWait = 0;
 		if (this.writePower) {
 			this.directWrite(Cmd.SetPower, this.power.toString());
 			this.writePower = false;
@@ -258,6 +269,7 @@ class kettlerUSB extends EventEmitter {
 
 	// restart a connection
 	restart() {
+		console.log("restart");
 		if (this.port.isOpen) {
 			this.stop();
 			this.port.close();
