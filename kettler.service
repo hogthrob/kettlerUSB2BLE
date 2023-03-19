@@ -7,7 +7,7 @@ StandardError=journal
 SyslogIdentifier=Kettler
 User=pi
 Group=pi
-WorkingDirectory=/home/pi/KettlerUSB
+WorkingDirectory=/home/pi/kettlerUSB2BLE
 
 [Install]
 WantedBy=multi-user.target
