@@ -1,22 +1,31 @@
-server:
-	debug: true
-	host: 192.168.33.2
-	port: 3000
+#server:
+  # not supported yet
+#  debug: true
+  # default is 3000
+#  port: 3000
 
 cyclist:
-	ftp: 300
-	weight: 61
-	frontalArea: 0.47
+  # watts, 300 is default
+  ftp: 300 
+  # kilogram, 75 is default
+  weight: 75
+  #  0.47 is default, 0.65 tops, 0.514 hoods, 0.487 drops, 0.462 aerobars  
+  frontalArea: 0.65 
 
 bike:
-	weight: 7
-	driveTrainLoss: 0
-	tireDiameter: 622
-	tireWidth: 23
-	cogs: [28, 25, 22, 19, 17, 16, 15, 14, 13, 12, 11, 10]
-	chainRings: [34, 50]
+  # kilogram, includes everything except body weight, 9 is default
+  weight: 9 
+  # in percent, 3 is normal, 4 is for dry chain, 5 for dry AND old chain
+  driveTrainLoss: 3
+  # in mm, 622 is default
+  tireDiameter: 622
+  # in mm, 23 is default
+  tireWidth: 23
+  # any number of cogs, but it must be more than one and higher values come first
+  cogs: [28, 25, 22, 19, 17, 16, 15, 14, 13, 12, 11, 10]
+  # at the moment, it must be exactly 2 chainrings, smaller values first
+  chainRings: [34, 50]
 
-physics:
-	gravity: 9.8067
-	airDensity: 1.226
-	
+#physics:
+#  gravity: 9.8067
+#  airDensity: 1.226

@@ -12,25 +12,53 @@ console.log = function () {
 	t.write(util.format.apply(this, arguments) + '\n');
 };*/
 
-var DEBUG = false;
-var express = require('express');
-var kettlerUSB = require('./kettlerUSB');
-var KettlerBLE = require('./BLE/kettlerBLE');
-var BikeState = require('./BikeState');
-var Oled = require('./OledInfo');
-var Button = require('./lib/rpi_gpio_buttons');
+const DEBUG = false;
+const express = require('express');
+const KettlerUSB = require('./kettlerUSB');
+const KettlerBLE = require('./BLE/kettlerBLE');
+const BikeState = require('./BikeState');
+const Oled = require('./OledInfo');
+const Button = require('./lib/rpi_gpio_buttons');
+const YAML = require('yaml');
+const fs = require('fs');
+
+
+const defaultConfig = {
+  server: { debug: false, port: 3000 },
+  cyclist: { 
+	ftp: 300, 
+	weight: 75, 
+	frontalArea: 0.47, // 0.65 tops, 0.514 hoods, 0.487 drops, 0.462 aerobars 
+  },
+  bike: {
+    weight: 9,
+    driveTrainLoss: 3, // in percent, 3 is normal, 4 is for dry chain, 5 for dry AND old chain
+    tireDiameter: 622,
+    tireWidth: 23,
+    cogs: [28, 25, 22, 19, 17, 16, 15, 14, 13, 12, 11, 10],
+    chainRings: [34, 50],
+  },
+  physics: { gravity: 9.8067, airDensity: 1.226 },
+};
+
+const file = fs.readFileSync('./config.yml', 'utf8')
+const fileConfig = YAML.parse(file);
+
+const config = { ...defaultConfig, ...fileConfig};
+console.log(config);
 
 //--- Web Server on port 3000 for inspecting the Kettler State
 const app = express();
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
 app.get('/', function (req, res) {
-	res.render('index');
+	res.render('index', {});
 });
-server = app.listen(3000, function () {
-		console.log('Kettler app listening on port 3000!');
+server = app.listen(config.server.port, function () {
+		console.log(`Kettler app listening on port ${config.server.port}!`);
 	});
 const io = require("socket.io")(server);
+
 io.on('connection', (socket) => {
 	socket.on('key', function (ev) {
 		console.log('key' + ev);
@@ -82,20 +110,22 @@ io.on('connection', (socket) => {
 });
 
 //--- Buttons
-var button = new Button(7);
-button.on('clicked', function () {
-	bikeState.GearUp();
-});
- var button = new Button(11);
-button.on('clicked', function () {
-	bikeState.GearDown();
+// 7 -> GPIO4
+// 11 -> GPIO17
+const buttons = new Button({ mode: RPiGPIOButtons.MODE_BCM, pins: [7,11] });
+buttons.on('clicked', pin => {
+	switch(pin)
+	{
+	case 7: bikeState.GearUp(); break;
+	case 11: bikeState.GearDown(); break;
+	}
 });
  
 //--- Oled Screen
-let oled = new Oled();
+const oled = new Oled();
 
 //--- Machine State
-var bikeState = new BikeState();
+const bikeState = new BikeState(config);
 // un peu de retour serveur
 bikeState.on('mode', (mode) => {
 	io.emit('mode', mode);
@@ -141,7 +171,7 @@ bikeState.on('gearPower', (gearPower) => {
 //bikeState.setGear(4);
 
 //--- Serial port
-var kettlerUSB = new kettlerUSB();
+const kettlerUSB = new KettlerUSB();
 kettlerUSB.on('error', (string) => {
 	console.log('error : ' + string);
 	io.emit('error', string);

@@ -26,9 +26,9 @@ max_usb_current=1
 ```
 
 ### NodeJS
-The provided packages for node.js with Raspberry Pi OS are old, but do work fine:
+The provided packages for node.js with Raspberry Pi OS are too old, see installing the newer v18 LTS is required (yaml needs >= v14):
 ```
-sudo apt install npm
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 ```
 ### BLEno Setup
 We use the great bleno (from abandonware for continuous support) library for simulating a Bluetooth Peripheral followin the GATT FTMS protocol.
@@ -43,7 +43,7 @@ install lib
 ```
 sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev
 ```
-Optional: give node the rights to do bluetooth (and more networking) without superuser rights
+Optional but recommended: give node the rights to do bluetooth (and more networking) without superuser rights
 ```
 sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)
 ```
@@ -66,9 +66,11 @@ it can take a while as bleno must be compiled from sources.
 ### Bike Setup
 Just plug an USB cable from your PI (data USB, the central one) to the USB or use an USB to RS232 serial converter for bikes with a serial interface (such as the Kettler AX1 and Kettler Ergoracer)
 
-The Linux version installed on the PI already contains the CP21xx drivers.
-
 ## Usage
+
+### Configuration
+Initial support for configuration via config.yml has been integrated (metric values, i.e. kg for weights / mm for tire/wheel dimensions)
+Adjust the values in this file to adjust simulation performance.
 
 ### Start
 First try (`sudo` not be required if you executed the setcap command ):
@@ -77,19 +79,19 @@ sudo node server.js
 ```
 
 You should hear a sound from the bike when the serial connection is OK. 
-On the bike screen, you can now see the "USB" icons
-Note: older bikes have no sound and will not show an icon when connected.
+On the bike screen, you can now see the "USB" icons.
+Note: older bikes (like the AX1) have no sound and will not show an icon when connected.
 
 If you scan for BLE peripheral (use Nordic RF app fro ANdroid or IPhone for example)
 Your kettler bike should appear as `KettlerBLE` device with two services (power & FTMS)
 
 ### Web Site
 The Bridge is also a simple web server.
-It help debuging and have more feedback on the current state of the bike.
+It helps debugging and has more feedback on the current state of the bike.
 
-* start your browser http://<pi-adress>:3000
+* Start your browser http://<pi-adress>:3000
 
-you can follow the bridge activity on a simple website.
+You can follow the bridge activity on a simple website.
 It will display the current power, HR et speed and some logs.
 It's also possible to switch gears.
 
@@ -105,7 +107,10 @@ sudo systemctl enable kettler.service
 sudo systemctl start kettler.service
 ```
 
-## Future
-* Power Curve description with config
-* Oled feedback
-* Gear Shift
+## Connecting Additional Hardware
+### OLED Display
+Connect an SSD1306 compatible OLED with 128x64 pixels to the GPIO pins 1(3.3V/VDD), 3 (SDA), 5(SCL), and 6(GND).
+Currently the display is only showing a few details like connection status, mode (ERG/SIM) and depending on mode target power or grade.
+
+### Buttons
+For shifting gears up and down, buttons can be connected to pin 7 (gear up), pin 11 (gear down). Buttons must have a pull-up resistor to 3.3V and be normally open.

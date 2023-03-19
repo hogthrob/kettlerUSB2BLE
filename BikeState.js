@@ -12,7 +12,7 @@ const sprockets = [34, 31, 28, 25, 22, 19, 17, 16, 15, 14, 13, 12, 11, 10]; // b
 const rings = [34, 50]; // small to big, currently it must be exactly two of them
 
 class BikeState extends EventEmitter {
-  constructor() {
+  constructor(config = null) {
     super();
     console.log(`[BikeState starting]`);
 
@@ -34,6 +34,8 @@ class BikeState extends EventEmitter {
 
     this.sprocket = 0;
     this.ring = 0;
+
+    this.config = config;
 
     // this.external = {}
     // this.external.grade = 0;
@@ -217,8 +219,8 @@ class BikeState extends EventEmitter {
     this.emit('cw', this.external.cw);
 
     const ms = speed / 3.6;
-    const gravity = 9.8067;
-    const airDensity = 1.226;
+    const gravity = this.config.physics.gravity;
+    const airDensity = this.config.physics.airDensity;
     const chainDrag = 0.98;
     const weight = 61 + 7;
     //const frontalArea = 0.47;
@@ -266,19 +268,19 @@ class BikeState extends EventEmitter {
 
     // Set params for calculate functions
     const params = {};
-    params.rp_dtl = 0;
-    params.rp_wr = 116;
-    params.rp_wb = 9;
+    params.rp_dtl = this.config.bike.driveTrainLoss; // 3 - 5
+    params.rp_wr = this.config.cyclist.weight;
+    params.rp_wb = this.config.bike.weight;
     params.ep_g = this.external.grade;
     params.ep_crr = this.external.crr;
-    params.rp_a = 0.509;
-    params.rp_cd = 0.63;
-    params.ep_rho = 1.226;
+    params.rp_a = this.config.cyclist.frontalArea; //  0.65 tops, 0.514 hoods, 0.487 drops, 0.462 aerobars 
+    params.rp_cd = 0.63; // constant value
+    params.ep_rho = this.config.physics.airDensity;
     params.ep_headwind = 0;
 
     // constants for bike calculations
-    const diameter = 622;
-    const tire_size = 23;
+    const diameter = this.config.bike.tireDiameter;
+    const tire_size = this.config.bike.tireWidth;
 
     // If auto gears then calculate gear
     //console.log("this.autoGears = " + this.autoGears);
@@ -301,6 +303,17 @@ class BikeState extends EventEmitter {
 
     // Return the power
     this.emit('simpower', this.gearPower);
+    console.log(
+      'Simulation',
+      speed,
+      this.gear,
+      this.gearRatio,
+      this.gearPower,
+      this.external.crr,
+      this.external.cw,
+      this.external.grade,
+      this.external.windspeed
+    );
   }
 
   autoGearDanheron(params, diameter, tire_size) {
