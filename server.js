@@ -112,7 +112,7 @@ io.on('connection', (socket) => {
 //--- Buttons
 // 7 -> GPIO4
 // 11 -> GPIO17
-const buttons = new Button({ mode: RPiGPIOButtons.MODE_BCM, pins: [7,11] });
+const buttons = new Button({ mode: Button.MODE_BCM, pins: [7,11] });
 buttons.on('clicked', pin => {
 	switch(pin)
 	{
@@ -212,6 +212,25 @@ kettlerUSB.on('data', (data) => {
 	// send to BLE adapter
 	kettlerBLE.notifyFTMS(data);
 });
+
+kettlerUSB.on('buttonPress', (buttonPressed) => {
+	// console.log("ergo konzept button press", buttonPressed);
+	switch (buttonPressed) {
+    case 'up':
+	  	bikeState.GearUp();
+      break;
+    case 'down':
+		bikeState.GearDown();
+      break;
+    case 'left':
+		// not always available
+      break;
+    case 'right':
+		bikeState.ChangeGearMode();
+      break;
+  }
+});
+
 kettlerUSB.open();
 
 //--- BLE server
