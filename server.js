@@ -54,7 +54,7 @@ app.set('view engine', 'ejs');
 app.get('/', function (req, res) {
 	res.render('index', {});
 });
-server = app.listen(config.server.port, function () {
+server = app.listen(Number(config.server.port), function () {
 		console.log(`Kettler app listening on port ${config.server.port}!`);
 	});
 const io = require("socket.io")(server);
@@ -148,6 +148,7 @@ bikeState.on('simpower', (simpower) => {
 });
 bikeState.on('speed', (speed) => {
 	io.emit('speed', speed);
+	oled.displaySpeed(speed);
 });
 // bikeState.on('rpm', (rpm) => {
 // 	io.emit('rpm', rpm);
@@ -160,6 +161,7 @@ bikeState.on('cw', (cw) => {
 });
 bikeState.on('autoGears', (autoGears) => {
 	io.emit('autoGears', autoGears);
+	oled.displayAutoGears(autoGears);
 });
 bikeState.on('kill', (kill) => {
 	io.emit('kill', kill);
@@ -234,7 +236,7 @@ kettlerUSB.on('buttonPress', (buttonPressed) => {
 kettlerUSB.open();
 
 //--- BLE server
-var kettlerBLE = new KettlerBLE(serverCallback);
+const kettlerBLE = new KettlerBLE(serverCallback);
 
 kettlerBLE.on('advertisingStart', (client) => {
 	oled.displayBLE('Started');
