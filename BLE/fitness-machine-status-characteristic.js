@@ -1,9 +1,9 @@
 const Bleno = require('@abandonware/bleno');
-var DEBUG = false;
+const DEBUG = false;
 
 // Spec
 // Status op code
-var StatusOpCode = {
+const StatusOpCode = {
   reservedForFutureUse: 0x00,
   reset: 0x01,
   stoppedPausedUser: 0x02,
@@ -29,13 +29,6 @@ class FitnessMachineStatusCharacteristic extends Bleno.Characteristic {
       uuid: '2ADA',
       value: null,
       properties: ['notify'],
-      descriptors: [
-        new Bleno.Descriptor({
-          // Client Characteristic Configuration
-          uuid: '2902',
-          value: Buffer.alloc(2)
-        })
-      ]
     })
     this._updateValueCallback = null
   }

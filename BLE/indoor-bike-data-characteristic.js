@@ -1,20 +1,29 @@
-var Bleno = require('@abandonware/bleno');
-var DEBUG = false;
+const Bleno = require('@abandonware/bleno');
+const DEBUG = false;
 
-class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
+const IndoorFlags = {
+  moreData: 0x0001,
+  averageSpeed: 0x0002,
+  cadence: 0x0004,
+  averageCadence: 0x0008,
+  totalDistance: 0x0010,
+  resistanceLevel: 0x0020,
+  power: 0x0040,
+  averagePower: 0x080,
+  expendedEnergy: 0x0100,
+  heartRate: 0x0200,
+  metabolicEquivalent: 0x0400,
+  elapsedTime: 0x0800,
+  remainingTime: 0x1000,
+ };
+
+ class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
 
 	constructor() {
 		super({
 			uuid: '2AD2',
 			value: null,
 			properties: ['notify'],
-			descriptors: [
-				new Bleno.Descriptor({
-					// Client Characteristic Configuration
-					uuid: '2902',
-					value: Buffer.alloc(2)
-				})
-			]
 		});
 		this._updateValueCallback = null;
 	}
@@ -32,46 +41,50 @@ class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
 	};
 
 	notify(event) {
-		if (!('power' in event) && !('hr' in event)) {
+		if (!('speed' in event) && !('power' in event) && !('hr' in event)) {
 			// ignore events with no power and no hr data
 			return this.RESULT_SUCCESS; 
 		}
 
 		if (this._updateValueCallback) {
 			if (DEBUG) console.log("[IndoorBikeDataCharacteristic] Notify");
-			var buffer = Buffer.alloc(10);
-			// speed + power + heart rate
-			buffer.writeUInt8(0x44, 0);
-			buffer.writeUInt8(0x02, 1);
+			const buffer = Buffer.alloc(10);
 
-			var index = 2;
-			if ('speed' in event) {
-				var speed = parseInt(event.speed * 100);
-				if (DEBUG) console.log("[IndoorBikeDataCharacteristic] speed: " + speed);
-				buffer.writeInt16LE(speed, index);
-				index += 2;
-			}
+			let flags = 0x0000;
+			
+			let index = 2;
+
+			const speed = parseInt(event.speed * 100);
+			if (DEBUG) console.log("[IndoorBikeDataCharacteristic] speed: " + speed);
+			buffer.writeInt16LE(speed, index);
+			index += 2;
 			
 			if ('rpm' in event) {
-				var rpm = event.rpm;
+				flags |= IndoorFlags.cadence;
+				const rpm = event.rpm;
 				if (DEBUG) console.log("[IndoorBikeDataCharacteristic] rpm: " + rpm);
 				buffer.writeInt16LE(rpm * 2, index);
 				index += 2;
 			}
 			
 			if ('power' in event) {
-				var power = event.power;
+				flags |= IndoorFlags.power;
+				const power = event.power;
 				if (DEBUG) console.log("[IndoorBikeDataCharacteristic] power: " + power);
 				buffer.writeInt16LE(power, index);
 				index += 2;
 			}
 
 			if ('hr' in event) {
-				var hr = event.hr;
+				flags |= IndoorFlags.heartRate;
+				const hr = event.hr;
 				if (DEBUG) console.log("[IndoorBikeDataCharacteristic] hr : " + hr);
 				buffer.writeUInt16LE(hr, index);
 				index += 2;
 			}
+
+			buffer.writeUInt16LE(flags, 0);
+      		
 			this._updateValueCallback(buffer);
 		}
 		else

@@ -1,10 +1,10 @@
 
-var Bleno = require('@abandonware/bleno');
-var DEBUG = true;
+const Bleno = require('@abandonware/bleno');
+const DEBUG = false;
 
 // Spec
 // Control point op code
-var ControlPointOpCode = {
+const ControlPointOpCode = {
 	requestControl: 0x00,
 	resetControl: 0x01,
 	setTargetSpeed: 0x02,
@@ -29,7 +29,7 @@ var ControlPointOpCode = {
 	responseCode: 0x80
 };
 
-var ResultCode = {
+const ResultCode = {
 	reserved: 0x00,
 	success: 0x01,
 	opCodeNotSupported: 0x02,
@@ -45,13 +45,6 @@ class FitnessControlPoint extends Bleno.Characteristic {
 			uuid: '2AD9',
 			value: null,
 			properties: ['write', 'indicate'],
-			descriptors: [
-				new Bleno.Descriptor({
-					// Client Characteristic Configuration
-					uuid: '2902',
-					value: Buffer.alloc(2)
-				})
-			]
 		});
 
 		this.underControl = false;
@@ -72,7 +65,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
 	onUnsubscribe() {
 		if (DEBUG)
 			console.log('[FitnessControlPoint] onUnsubscribe');
-		this.serverCallback = null;
+		this.serverCallback = () => {};
 		return this.RESULT_UNLIKELY_ERROR;
 	};
 
@@ -83,7 +76,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
 
 	// Follow Control Point instruction from the client
 	onWriteRequest(data, offset, withoutResponse, callback) {
-		var state = data.readUInt8(0);
+		const state = data.readUInt8(0);
 		callback(this.RESULT_SUCCESS);
 		 
 		switch (state) {
@@ -180,10 +173,10 @@ class FitnessControlPoint extends Bleno.Characteristic {
 		case ControlPointOpCode.setIndoorBikeSimulationParameters:
 			if (DEBUG)
 				console.log('[FitnessControlPoint] ControlPointOpCode.setIndoorBikeSimulationParameters');
-			var windspeed = data.readInt16LE(1) * 0.001;
-			var grade = data.readInt16LE(3) * 0.01;
-			var crr = data.readUInt8(5) * 0.0001;
-			var cw = data.readUInt8(6) * 0.01;
+			const windspeed = data.readInt16LE(1) * 0.001;
+			const grade = data.readInt16LE(3) * 0.01;
+			const crr = data.readUInt8(5) * 0.0001;
+			const cw = data.readUInt8(6) * 0.01;
 			if (this.ClientCallback('simulation', windspeed, grade, crr, cw)) {
 				this.serverCallback(this.buildResponse(state, ResultCode.success));
 			} else {
@@ -203,7 +196,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
 
 	// Return the result message
 	buildResponse(opCode, resultCode) {
-		var buffer = Buffer.alloc(3);
+		const buffer = Buffer.alloc(3);
 		buffer.writeUInt8(0x80, 0);
 		buffer.writeUInt8(opCode, 1);
 		buffer.writeUInt8(resultCode, 2);
