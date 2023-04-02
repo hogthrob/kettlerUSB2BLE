@@ -16,8 +16,8 @@ class KettlerBLE extends EventEmitter {
 		this.ftms = new FitnessMachineService(serverCallback); 
 		this.hrs = new HeartService();
 		
-		this.services_uuids =  [this.hrs.uuid, this.ftms.uuid];
-		this.services = [this.hrs, this.ftms];
+		this.services_uuids =  [this.ftms.uuid, this.hrs.uuid];
+		this.services = [this.ftms, this.hrs];
 
 		let self = this;
 		console.log(`[${this.name} starting]`);
