@@ -48,16 +48,17 @@ const IndoorFlags = {
 
 		if (this._updateValueCallback) {
 			if (DEBUG) console.log("[IndoorBikeDataCharacteristic] Notify");
-			const buffer = Buffer.alloc(10);
+			const buffer = Buffer.alloc(11);
 
 			let flags = 0x0000;
 			
 			let index = 2;
-
+			
 			const speed = parseInt(event.speed * 100);
 			if (DEBUG) console.log("[IndoorBikeDataCharacteristic] speed: " + speed);
 			buffer.writeInt16LE(speed, index);
 			index += 2;
+			
 			
 			if ('rpm' in event) {
 				flags |= IndoorFlags.cadence;
@@ -66,6 +67,7 @@ const IndoorFlags = {
 				buffer.writeInt16LE(rpm * 2, index);
 				index += 2;
 			}
+			
 			
 			if ('power' in event) {
 				flags |= IndoorFlags.power;
@@ -76,13 +78,15 @@ const IndoorFlags = {
 			}
 
 			if ('hr' in event) {
-				flags |= IndoorFlags.heartRate;
+        		//flags |= IndoorFlags.heartRate << 1; // that makes it work for Wahoo Systm
+				flags |= IndoorFlags.heartRate; // that is the standard defined value
 				const hr = event.hr;
-				if (DEBUG) console.log("[IndoorBikeDataCharacteristic] hr : " + hr);
-				buffer.writeUInt16LE(hr, index);
-				index += 2;
-			}
+				if (DEBUG) console.log('[IndoorBikeDataCharacteristic] hr : ' + hr);
+				buffer.writeUInt8(hr, index);
+				index += 1;
+      		}
 
+			//console.log(flags);
 			buffer.writeUInt16LE(flags, 0);
       		
 			this._updateValueCallback(buffer);
