@@ -10,9 +10,9 @@ class FitnessMachineService extends Bleno.PrimaryService {
 
 	constructor(callback) {
 
-		let controlPoint = new FitnessControlPoint(callback);
-		let indoorBikeData = new IndoorBikeDataCharacteristic();
-		let fitnessMachineStatus = new FitnessMachineStatusCharacteristic()
+		const controlPoint = new FitnessControlPoint(callback);
+		const indoorBikeData = new IndoorBikeDataCharacteristic();
+		const fitnessMachineStatus = new FitnessMachineStatusCharacteristic()
 
 			super({
 				uuid: '1826',
