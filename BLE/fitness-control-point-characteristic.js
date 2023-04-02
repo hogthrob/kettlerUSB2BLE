@@ -1,6 +1,6 @@
 
 const Bleno = require('@abandonware/bleno');
-const DEBUG = false;
+const DEBUG = true;
 
 // Spec
 // Control point op code
@@ -122,10 +122,11 @@ class FitnessControlPoint extends Bleno.Characteristic {
 			break;
 
 		case ControlPointOpCode.setTargetPower:
+			const watt = data.readUInt16LE(1);
+				
 			if (DEBUG)
-				console.log('[FitnessControlPoint] ControlPointOpCode.setTargetPower.');
+				console.log('[FitnessControlPoint] ControlPointOpCode.setTargetPower: ', watt);
 			if (this.underControl) {
-				var watt = data.readUInt16LE(1);
 				if (DEBUG)
 					console.log('[FitnessControlPoint] watt : ' + watt);
 				if (this.ClientCallback('power', watt)) {
