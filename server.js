@@ -18,9 +18,12 @@ const KettlerUSB = require('./kettlerUSB');
 const KettlerBLE = require('./BLE/kettlerBLE');
 const BikeState = require('./BikeState');
 const Oled = require('./OledInfo');
+const GamepadControl = require('./GamepadControl');
 const Button = require('./lib/rpi_gpio_buttons');
 const YAML = require('yaml');
 const fs = require('fs');
+
+const gamepad = new GamepadControl();
 
 
 const defaultConfig = {
@@ -70,9 +73,11 @@ io.on('connection', (socket) => {
 			bikeState.addPower(-20);
 			break;
 		case 'GearUp':
+			bikeState.SetGearMode(false);
 			bikeState.GearUp();
 			break;
 		case 'GearDn':
+			bikeState.SetGearMode(false);
 			bikeState.GearDown();
 			break;
 		case 'SprocketUp':
@@ -121,6 +126,7 @@ buttons.on('clicked', pin => {
 	}
 });
  
+///let myPower = 100;
 //--- Oled Screen
 const oled = new Oled();
 
@@ -142,9 +148,12 @@ bikeState.on('windspeed', (windspeed) => {
 	io.emit('windspeed', windspeed);
 });
 bikeState.on('simpower', (simpower) => {
-	io.emit('power', simpower);
-	kettlerUSB.setPower(simpower);
-	oled.displayPower(simpower);
+	if (bikeState.controlMode === 'local')
+	{
+		io.emit('power', simpower);
+		kettlerUSB.setPower(simpower);
+		oled.displayPower(simpower);
+	}
 });
 bikeState.on('speed', (speed) => {
 	io.emit('speed', speed);
@@ -163,6 +172,12 @@ bikeState.on('autoGears', (autoGears) => {
 	io.emit('autoGears', autoGears);
 	oled.displayAutoGears(autoGears);
 });
+
+bikeState.on('controlMode', (controlMode) => {
+  io.emit('controlMode', controlMode);
+  oled.displayControlMode(controlMode);
+});
+
 bikeState.on('kill', (kill) => {
 	io.emit('kill', kill);
 });
@@ -189,6 +204,7 @@ kettlerUSB.on('disconnected', () => {
 });
 kettlerUSB.on('data', (data) => {
 	// keep
+	///	data.power = myPower;
 	bikeState.setData(data);
 
 	// send to html server
@@ -215,25 +231,31 @@ kettlerUSB.on('data', (data) => {
 	kettlerBLE.notifyFTMS(data);
 });
 
-kettlerUSB.on('buttonPress', (buttonPressed) => {
-	// console.log("ergo konzept button press", buttonPressed);
-	switch (buttonPressed) {
+
+const buttonHandler = (buttonPressed) => {
+  console.log('button press handler', buttonPressed);
+  switch (buttonPressed) {
     case 'up':
-	  	bikeState.GearUp();
+      bikeState.SetGearMode(false);
+      bikeState.GearUp();
       break;
     case 'down':
-		bikeState.GearDown();
+      bikeState.SetGearMode(false);
+      bikeState.GearDown();
       break;
     case 'left':
-		// not always available
+      // not always available
+      bikeState.ChangeControlMode();
       break;
     case 'right':
-		bikeState.ChangeGearMode();
+      bikeState.ChangeGearMode();
       break;
   }
-});
+};
 
-kettlerUSB.open();
+kettlerUSB.on('buttonPress', buttonHandler);
+gamepad.on('buttonPress', buttonHandler);
+
 
 //--- BLE server
 const kettlerBLE = new KettlerBLE(serverCallback);
@@ -269,6 +291,7 @@ function serverCallback(message, ...args) {
 	case 'power':
 		oled.setStatus(2);
 		// console.log('[server.js] - Bike in ERG Mode');
+		///myPower = args[0];
 		bikeState.setTargetPower(args[0]);
 		success = true;
 		break;
@@ -296,6 +319,10 @@ function serverCallback(message, ...args) {
 	}
 	return success;
 };
+
+kettlerUSB.open();
+
+bikeState.begin();
 
 /**** TEST ***/
 /*

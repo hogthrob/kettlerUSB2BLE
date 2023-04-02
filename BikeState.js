@@ -1,5 +1,5 @@
 const EventEmitter = require('events');
-var DEBUG = false;
+const DEBUG = false;
 
 // used for "simple" gearbox simulating a single chainring and any number of evenly spaced gears
 const minGear = 1;
@@ -31,6 +31,8 @@ class BikeState extends EventEmitter {
     this.gearPower = 200;
     this.kill = false;
     this.setGear(1.0);
+    this.controlMode = 'remote';
+    this.SetGearMode(true);
 
     this.sprocket = 0;
     this.ring = 0;
@@ -39,6 +41,11 @@ class BikeState extends EventEmitter {
 
     // this.external = {}
     // this.external.grade = 0;
+  }
+
+  begin()
+  {
+    this.SetGearMode(true);
   }
 
   emitGear() {
@@ -65,6 +72,11 @@ class BikeState extends EventEmitter {
     if (this.mode === 'SIM') {
       this.compute();
     }
+  }
+
+  ChangeControlMode() {
+    this.controlMode = this.controlMode === 'local'? 'remote': 'local'; 
+    this.emit('controlMode',this.controlMode)
   }
 
   setGear(gear) {
@@ -109,10 +121,20 @@ class BikeState extends EventEmitter {
   }
 
   ChangeGearMode() {
-    this.autoGears = !this.autoGears;
+    this.SetGearMode(!this.autoGears);
+  }
+
+  /**
+   * Enable or disable automatic gear shifting in simulation mode
+   * 
+   * @param {bool} autoGears true => automatic shifting enabled, otherwise manual gear shifting 
+   */
+  SetGearMode(autoGears = false) {
+    this.autoGears = autoGears;
 
     this.emit('autoGears', this.autoGears);
   }
+
 
   GearPowerUp(amount) {
     if (amount) {
@@ -273,7 +295,7 @@ class BikeState extends EventEmitter {
     params.rp_wb = this.config.bike.weight;
     params.ep_g = this.external.grade;
     params.ep_crr = this.external.crr;
-    params.rp_a = this.config.cyclist.frontalArea; //  0.65 tops, 0.514 hoods, 0.487 drops, 0.462 aerobars 
+    params.rp_a = this.config.cyclist.frontalArea; //  0.65 tops, 0.514 hoods, 0.487 drops, 0.462 aerobars
     params.rp_cd = 0.63; // constant value
     params.ep_rho = this.config.physics.airDensity;
     params.ep_headwind = 0;

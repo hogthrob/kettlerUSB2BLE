@@ -47,6 +47,7 @@ class Oled {
       this.autoGears = '';
       this.speed = 0;
       this.rpm = 0;
+      this.controlMode = '';
 
       // run async
       this.displayLoop();
@@ -107,10 +108,14 @@ class Oled {
     this.oled.writeString(font, 1, 'USB ' + this.usb, 1, false);
     this.oled.setCursor(10, 38);
     this.oled.writeString(font, 1, 'BLE ' + this.ble, 1, false);
-    this.oled.setCursor(50, 50);
-    this.oled.writeString(font, 1, 'INIT', true);
+    this.displayMainMode('INIT');
   }
 
+  displayMainMode(modeName)
+  {
+    this.oled.setCursor(50, 50);
+    this.oled.writeString(font, 1, modeName + ' ' + this.controlMode.charAt(0), true);
+  }
   // Gear
   displaySimInfo() {
     this.oled.setCursor(80, 5);
@@ -127,14 +132,13 @@ class Oled {
     this.oled.writeString(font, 1, '%', 1, false);
     this.oled.setCursor(10, 45);
     this.oled.writeString(font, 1, this.targetPower.toString(), 1, false);
-    this.oled.setCursor(50, 50);
-    this.oled.writeString(font, 1, 'SIM', true);
+    this.displayMainMode('SIM');
   }
 
   // Gear
   displayControlledInfo() {
     this.oled.setCursor(80, 5);
-    this.oled.writeString(font, 1, 'Gear ' + (this.autoGears ? 'A' : 'M'), 1, false);
+    this.oled.writeString(font, 1, 'Gear ' + (this.autoGears ? 'A' : this.autoGears === false ? 'M' : '?'), 1, false);
     this.oled.setCursor(90, 25);
     this.oled.writeString(font, 1, this.gear.toString(), 1, false);
     this.oled.setCursor(20, 5);
@@ -142,8 +146,7 @@ class Oled {
     this.oled.setCursor(10, 25);
     this.oled.writeString(fontLarge, 1, this.targetPower.toString(), 1, false);
     this.oled.writeString(font, 1, 'W', 1, false);
-    this.oled.setCursor(50, 50);
-    this.oled.writeString(font, 1, 'CONTROLLED', true);
+    this.displayMainMode('CONTROLLED');
   }
 
   displayErgInfo() {
@@ -157,8 +160,7 @@ class Oled {
     this.oled.writeString(fontLarge, 1, this.targetPower.toString(), 1, false);
     this.oled.writeString(font, 1, 'W', 1, false);
     // this.oled.writeString(fontLarge, 1, this.targetPower.toString() + 'W', 1, false);
-    this.oled.setCursor(50, 50);
-    this.oled.writeString(font, 1, 'ERG', true);
+    this.displayMainMode('ERG');
   }
 
   setStatus(status) {
@@ -214,6 +216,14 @@ class Oled {
     if (autoGears != this.autoGears) {
       this.shouldUpdate = true;
       this.autoGears = autoGears;
+    }
+  }
+
+  // Control Mode
+  displayControlMode(cm) {
+    if (cm != this.controlMode) {
+      this.shouldUpdate = true;
+      this.controlMode = cm;
     }
   }
 }
