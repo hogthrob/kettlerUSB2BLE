@@ -148,7 +148,7 @@ bikeState.on('windspeed', (windspeed) => {
 	io.emit('windspeed', windspeed);
 });
 bikeState.on('simpower', (simpower) => {
-	if (bikeState.controlMode === 'local')
+	if (bikeState.controlMode !== 'local')
 	{
 		io.emit('power', simpower);
 		kettlerUSB.setPower(simpower);
