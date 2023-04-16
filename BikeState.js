@@ -3,9 +3,9 @@ const DEBUG = false;
 
 // used for "simple" gearbox simulating a single chainring and any number of evenly spaced gears
 const minGear = 1;
-const maxGear = 20;
-const gearMult = 1.1; // ratio difference between gears
-const minGearRatio = 0.5; // lowest possible gear ration crank to wheel
+const maxGear = 30;
+const gearMult = 1.12; // ratio difference between gears
+const minGearRatio = 0.25; // lowest possible gear ration crank to wheel
 
 // used for "real" bicyle gearbox simulation with multiple chain rings and sprockets
 const sprockets = [34, 31, 28, 25, 22, 19, 17, 16, 15, 14, 13, 12, 11, 10]; // big to small
